@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Todo List</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>My Tasks</h1>
+    </header>
+
+    <main class="container">
+        <section class="composer" aria-labelledby="add-task-title">
+            <h2 id="add-task-title" class="sr-only">Add a new task</h2>
+
+            <form id="task-form" novalidate>
+                <div class="field-row">
+                    <label for="task-input" class="sr-only">Task</label>
+                    <input id="task-input" name="task" type="text" placeholder="What do you need to do?" autocomplete="off" />
+
+                    <label for="priority" class="sr-only">Priority</label>
+                    <select id="priority" name="priority" aria-label="Priority">
+                        <option value="normal">Priority: Normal</option>
+                        <option value="low">Priority: Low</option>
+                        <option value="high">Priority: High</option>
+                    </select>
+
+                    <label for="due" class="sr-only">Due date</label>
+                    <input id="due" name="due" type="date" aria-label="Due date" />
+
+                    <button id="add-btn" type="submit" class="btn primary" aria-label="Add task">Add</button>
+                </div>
+                <p id="form-error" class="form-error" role="alert" aria-live="polite"></p>
+            </form>
+        </section>
+
+        <section class="controls" aria-label="Task controls">
+            <div class="filters">
+                <button class="chip active" data-filter="all" aria-pressed="true">All</button>
+                <button class="chip" data-filter="active" aria-pressed="false">Active</button>
+                <button class="chip" data-filter="completed" aria-pressed="false">Completed</button>
+            </div>
+            <div class="sort">
+                <label for="sort-by" class="sr-only">Sort by</label>
+                <select id="sort-by" aria-label="Sort tasks">
+                    <option value="created_desc">Newest first</option>
+                    <option value="created_asc">Oldest first</option>
+                    <option value="due_asc">Due date (soonest)</option>
+                    <option value="priority_desc">Priority (high first)</option>
+                </select>
+            </div>
+        </section>
+
+        <section class="list" aria-labelledby="task-list-title">
+            <h2 id="task-list-title" class="sr-only">Task list</h2>
+            <ul id="task-list" class="task-list" aria-live="polite"></ul>
+            <div id="empty-state" class="empty-state" hidden>
+                <p>No tasks yet. Add your first task above.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>Tasks are saved locally on this device.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Basic Calculator</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="calculator" role="application" aria-label="Basic Calculator">
+    <section class="display" aria-live="polite" aria-atomic="true">
+      <div class="previous" id="previousOperand"></div>
+      <div class="current" id="currentOperand">0</div>
+    </section>
+
+    <section class="keypad" aria-label="Calculator keypad">
+      <button class="accent" data-action="clear" title="Clear (Esc)">AC</button>
+      <button class="accent" data-action="delete" title="Backspace">DEL</button>
+      <button class="operator" data-operation="%" title="Percent">%</button>
+      <button class="operator" data-operation="/" title="Divide (/)">÷</button>
+
+      <button data-digit="7">7</button>
+      <button data-digit="8">8</button>
+      <button data-digit="9">9</button>
+      <button class="operator" data-operation="*" title="Multiply (*)">×</button>
+
+      <button data-digit="4">4</button>
+      <button data-digit="5">5</button>
+      <button data-digit="6">6</button>
+      <button class="operator" data-operation="-" title="Subtract (-)">−</button>
+
+      <button data-digit="1">1</button>
+      <button data-digit="2">2</button>
+      <button data-digit="3">3</button>
+      <button class="operator" data-operation="+" title="Add (+)">+</button>
+
+      <button class="span-2" data-digit="0">0</button>
+      <button data-dot>.&nbsp;</button>
+      <button class="equals" data-action="equals" title="Equals (=)">=</button>
+    </section>
+  </main>
+
+  <footer>
+    Tip: Use keyboard — digits, + − × ÷, <kbd>=</kbd>, <kbd>Enter</kbd>, <kbd>Backspace</kbd>, <kbd>Esc</kbd>
+  </footer>
+
+<script src="script.js"></script>
+</body>
+</html>

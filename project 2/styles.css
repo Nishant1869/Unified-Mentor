@@ -1,0 +1,219 @@
+/*
+  Basic, responsive styling for the todo app
+  - Mobile-first
+  - High contrast and accessible focus states
+*/
+
+:root {
+  --bg: #0f172a;           /* slate-900 */
+  --panel: #111827;        /* gray-900 */
+  --panel-2: #0b1324;      /* darker */
+  --text: #e5e7eb;         /* gray-200 */
+  --muted: #94a3b8;        /* slate-400 */
+  --primary: #60a5fa;      /* blue-400 */
+  --primary-strong: #3b82f6; /* blue-500 */
+  --danger: #ef4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --surface: #111827;
+  --border: #1f2937;
+  --chip: #0b1a33;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: linear-gradient(180deg, var(--bg), var(--panel-2));
+  color: var(--text);
+}
+
+.app-header, .app-footer {
+  text-align: center;
+  padding: 16px;
+}
+.app-header h1 { margin: 8px 0 0; font-size: 28px; }
+.app-footer p { color: var(--muted); font-size: 13px; margin: 0; }
+
+.container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 12px 16px 48px;
+}
+
+.composer {
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  backdrop-filter: blur(6px);
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(120px, 160px) minmax(120px, 170px) auto;
+  gap: 8px;
+}
+
+input[type="text"], input[type="date"], select {
+  width: 100%;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 12px;
+  outline: none;
+}
+
+input::placeholder { color: #9aa5b1; }
+
+input:focus, select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(96,165,250,0.25);
+}
+
+.btn {
+  border: 1px solid var(--primary);
+  background: var(--primary-strong);
+  color: white;
+  border-radius: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+}
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: translateY(1px); }
+
+.form-error {
+  min-height: 20px;
+  color: var(--danger);
+  font-size: 14px;
+  margin: 6px 2px 0;
+}
+
+.controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 10px;
+  gap: 12px;
+}
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.chip {
+  background: var(--chip);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+.chip.active { border-color: var(--primary); color: white; }
+
+.list { margin-top: 8px; }
+.task-list { list-style: none; margin: 0; padding: 0; }
+
+.task-item {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  background: rgba(17, 24, 39, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+}
+.task-item + .task-item { margin-top: 8px; }
+
+.task-left { display: flex; align-items: center; gap: 10px; }
+
+.task-title {
+  margin: 0;
+  word-break: break-word;
+}
+
+.muted { color: var(--muted); font-size: 12px; }
+
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  margin-left: 6px;
+}
+.badge.high { background: rgba(239, 68, 68, 0.15); color: #fecaca; border-color: rgba(239, 68, 68, 0.35); }
+.badge.normal { background: rgba(59, 130, 246, 0.15); color: #bfdbfe; border-color: rgba(59, 130, 246, 0.35); }
+.badge.low { background: rgba(34, 197, 94, 0.15); color: #bbf7d0; border-color: rgba(34, 197, 94, 0.35); }
+
+.actions { display: flex; gap: 6px; }
+.icon-btn {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.icon-btn:hover { background: #0a1429; }
+.icon-btn.delete { border-color: rgba(239,68,68,0.3); color: #fecaca; }
+
+input[type="checkbox"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  display: grid;
+  place-items: center;
+}
+input[type="checkbox"]:checked {
+  background: var(--success);
+  border-color: var(--success);
+}
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 2px;
+}
+
+.completed .task-title { text-decoration: line-through; color: var(--muted); }
+
+.edit-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.empty-state {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (max-width: 720px) {
+  .field-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  #task-input { grid-column: 1 / -1; }
+  #add-btn { grid-column: 1 / -1; }
+}
+
+
