@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mall - Manage Categories & Floors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Super Mall - Admin Panel</h1>
+                <div class="flex gap-4">
+                    <a href="dashboard.html" class="hover:text-blue-200">Dashboard</a>
+                    <a href="../index.html" class="hover:text-blue-200">Home</a>
+                    <button onclick="handleLogout()" class="hover:text-blue-200">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container mx-auto px-4 py-8">
+        <!-- Categories Section -->
+        <div class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold">Manage Categories</h1>
+                <button onclick="openCategoryModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    + Add Category
+                </button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categories-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Categories will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Floors Section -->
+        <div>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold">Manage Floors</h1>
+                <button onclick="openFloorModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                    + Add Floor
+                </button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor Number</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Description</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="floors-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- Floors will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Modal -->
+    <div id="category-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h2 id="category-modal-title" class="text-2xl font-bold mb-4">Add Category</h2>
+            <form id="category-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                    <input type="text" id="category-name" required
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="category-description" rows="3"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Save
+                    </button>
+                    <button type="button" onclick="closeCategoryModal()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Floor Modal -->
+    <div id="floor-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h2 id="floor-modal-title" class="text-2xl font-bold mb-4">Add Floor</h2>
+            <form id="floor-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Floor Number *</label>
+                    <input type="number" id="floor-number" required min="1"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                    <input type="text" id="floor-name"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="floor-description" rows="3"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Save
+                    </button>
+                    <button type="button" onclick="closeFloorModal()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/logger.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/categories.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+        let editingCategoryId = null;
+        let editingFloorId = null;
+
+        // Initialize auth and check admin access
+        authService.init().then(() => {
+            if (!authService.requireAdmin()) return;
+            loadCategories();
+            loadFloors();
+        });
+
+        async function handleLogout() {
+            await authService.signOut();
+            window.location.href = '../index.html';
+        }
+
+        // Categories
+        async function loadCategories() {
+            try {
+                const categories = await categoryService.getCategories();
+                const tbody = document.getElementById('categories-table-body');
+                
+                if (categories.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No categories found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = categories.map(cat => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${cat.name || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${cat.description || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button onclick="editCategory('${cat.id}')" class="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
+                            <button onclick="deleteCategory('${cat.id}')" class="text-red-600 hover:text-red-800">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                showNotification('Failed to load categories', 'error');
+            }
+        }
+
+        function openCategoryModal(categoryId = null) {
+            editingCategoryId = categoryId;
+            const modal = document.getElementById('category-modal');
+            const title = document.getElementById('category-modal-title');
+
+            if (categoryId) {
+                title.textContent = 'Edit Category';
+                // Note: We'd need to add a getCategory method or fetch directly
+                firebase.firestore().collection('categories').doc(categoryId).get().then(doc => {
+                    const cat = doc.data();
+                    document.getElementById('category-name').value = cat.name || '';
+                    document.getElementById('category-description').value = cat.description || '';
+                });
+            } else {
+                title.textContent = 'Add Category';
+                document.getElementById('category-form').reset();
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('category-modal').classList.add('hidden');
+            editingCategoryId = null;
+            document.getElementById('category-form').reset();
+        }
+
+        document.getElementById('category-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const categoryData = {
+                name: document.getElementById('category-name').value,
+                description: document.getElementById('category-description').value
+            };
+
+            try {
+                if (editingCategoryId) {
+                    await categoryService.updateCategory(editingCategoryId, categoryData);
+                    showNotification('Category updated successfully', 'success');
+                } else {
+                    await categoryService.createCategory(categoryData);
+                    showNotification('Category created successfully', 'success');
+                }
+                closeCategoryModal();
+                loadCategories();
+            } catch (error) {
+                showNotification('Failed to save category', 'error');
+                console.error('Error saving category:', error);
+            }
+        });
+
+        async function editCategory(categoryId) {
+            openCategoryModal(categoryId);
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!confirm('Are you sure you want to delete this category?')) return;
+            
+            try {
+                await categoryService.deleteCategory(categoryId);
+                showNotification('Category deleted successfully', 'success');
+                loadCategories();
+            } catch (error) {
+                showNotification('Failed to delete category', 'error');
+                console.error('Error deleting category:', error);
+            }
+        }
+
+        // Floors
+        async function loadFloors() {
+            try {
+                const floors = await categoryService.getFloors();
+                const tbody = document.getElementById('floors-table-body');
+                
+                if (floors.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No floors found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = floors.map(floor => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${floor.number || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${floor.name || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${floor.description || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button onclick="editFloor('${floor.id}')" class="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
+                            <button onclick="deleteFloor('${floor.id}')" class="text-red-600 hover:text-red-800">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading floors:', error);
+                showNotification('Failed to load floors', 'error');
+            }
+        }
+
+        function openFloorModal(floorId = null) {
+            editingFloorId = floorId;
+            const modal = document.getElementById('floor-modal');
+            const title = document.getElementById('floor-modal-title');
+
+            if (floorId) {
+                title.textContent = 'Edit Floor';
+                firebase.firestore().collection('floors').doc(floorId).get().then(doc => {
+                    const floor = doc.data();
+                    document.getElementById('floor-number').value = floor.number || '';
+                    document.getElementById('floor-name').value = floor.name || '';
+                    document.getElementById('floor-description').value = floor.description || '';
+                });
+            } else {
+                title.textContent = 'Add Floor';
+                document.getElementById('floor-form').reset();
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeFloorModal() {
+            document.getElementById('floor-modal').classList.add('hidden');
+            editingFloorId = null;
+            document.getElementById('floor-form').reset();
+        }
+
+        document.getElementById('floor-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const floorData = {
+                number: parseInt(document.getElementById('floor-number').value),
+                name: document.getElementById('floor-name').value,
+                description: document.getElementById('floor-description').value
+            };
+
+            try {
+                if (editingFloorId) {
+                    await categoryService.updateFloor(editingFloorId, floorData);
+                    showNotification('Floor updated successfully', 'success');
+                } else {
+                    await categoryService.createFloor(floorData);
+                    showNotification('Floor created successfully', 'success');
+                }
+                closeFloorModal();
+                loadFloors();
+            } catch (error) {
+                showNotification('Failed to save floor', 'error');
+                console.error('Error saving floor:', error);
+            }
+        });
+
+        async function editFloor(floorId) {
+            openFloorModal(floorId);
+        }
+
+        async function deleteFloor(floorId) {
+            if (!confirm('Are you sure you want to delete this floor?')) return;
+            
+            try {
+                await categoryService.deleteFloor(floorId);
+                showNotification('Floor deleted successfully', 'success');
+                loadFloors();
+            } catch (error) {
+                showNotification('Failed to delete floor', 'error');
+                console.error('Error deleting floor:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

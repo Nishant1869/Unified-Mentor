@@ -1,0 +1,22 @@
+{
+  "name": "super-mall-web-app",
+  "version": "1.0.0",
+  "description": "A complete Super Mall Web Application with admin panel and user features",
+  "main": "index.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "serve": "firebase serve",
+    "deploy": "firebase deploy"
+  },
+  "keywords": [
+    "mall",
+    "shopping",
+    "firebase",
+    "admin-panel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {}
+}
+

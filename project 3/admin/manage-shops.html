@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mall - Manage Shops</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Super Mall - Admin Panel</h1>
+                <div class="flex gap-4">
+                    <a href="dashboard.html" class="hover:text-blue-200">Dashboard</a>
+                    <a href="../index.html" class="hover:text-blue-200">Home</a>
+                    <button onclick="handleLogout()" class="hover:text-blue-200">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">Manage Shops</h1>
+            <button onclick="openShopModal()" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                + Add Shop
+            </button>
+        </div>
+
+        <!-- Shops List -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Floor</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="shops-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Shops will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Shop Modal -->
+    <div id="shop-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-screen overflow-y-auto">
+            <h2 id="modal-title" class="text-2xl font-bold mb-4">Add Shop</h2>
+            <form id="shop-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Shop Name *</label>
+                    <input type="text" id="shop-name" required
+                        class="w-full border border-gray-300 rounded-md px-3 py-2">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="shop-description" rows="3"
+                        class="w-full border border-gray-300 rounded-md px-3 py-2"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+                        <select id="shop-category" required
+                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Floor *</label>
+                        <select id="shop-floor" required
+                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                            <option value="">Select Floor</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Contact</label>
+                        <input type="text" id="shop-contact"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="shop-email"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2">
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <button type="submit" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Save
+                    </button>
+                    <button type="button" onclick="closeShopModal()" class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/logger.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/shops.js"></script>
+    <script src="../js/categories.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+        let editingShopId = null;
+
+        // Initialize auth and check admin access
+        authService.init().then(() => {
+            if (!authService.requireAdmin()) return;
+            loadCategories();
+            loadFloors();
+            loadShops();
+        });
+
+        async function handleLogout() {
+            await authService.signOut();
+            window.location.href = '../index.html';
+        }
+
+        async function loadCategories() {
+            try {
+                const categories = await categoryService.getCategories();
+                const select = document.getElementById('shop-category');
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.textContent = cat.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        async function loadFloors() {
+            try {
+                const floors = await categoryService.getFloors();
+                const select = document.getElementById('shop-floor');
+                floors.forEach(floor => {
+                    const option = document.createElement('option');
+                    option.value = floor.number;
+                    option.textContent = `Floor ${floor.number} - ${floor.name || ''}`;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading floors:', error);
+            }
+        }
+
+        async function loadShops() {
+            try {
+                const shops = await shopService.getShops();
+                const tbody = document.getElementById('shops-table-body');
+                
+                if (shops.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No shops found.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = shops.map(shop => `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">${shop.name || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shop.category || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shop.floor || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shop.contact || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button onclick="editShop('${shop.id}')" class="text-blue-600 hover:text-blue-800 mr-3">Edit</button>
+                            <button onclick="deleteShop('${shop.id}')" class="text-red-600 hover:text-red-800">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading shops:', error);
+                showNotification('Failed to load shops', 'error');
+            }
+        }
+
+        function openShopModal(shopId = null) {
+            editingShopId = shopId;
+            const modal = document.getElementById('shop-modal');
+            const form = document.getElementById('shop-form');
+            const title = document.getElementById('modal-title');
+
+            if (shopId) {
+                title.textContent = 'Edit Shop';
+                // Load shop data
+                shopService.getShop(shopId).then(shop => {
+                    document.getElementById('shop-name').value = shop.name || '';
+                    document.getElementById('shop-description').value = shop.description || '';
+                    document.getElementById('shop-category').value = shop.category || '';
+                    document.getElementById('shop-floor').value = shop.floor || '';
+                    document.getElementById('shop-contact').value = shop.contact || '';
+                    document.getElementById('shop-email').value = shop.email || '';
+                });
+            } else {
+                title.textContent = 'Add Shop';
+                form.reset();
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeShopModal() {
+            document.getElementById('shop-modal').classList.add('hidden');
+            editingShopId = null;
+            document.getElementById('shop-form').reset();
+        }
+
+        document.getElementById('shop-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const shopData = {
+                name: document.getElementById('shop-name').value,
+                description: document.getElementById('shop-description').value,
+                category: document.getElementById('shop-category').value,
+                floor: document.getElementById('shop-floor').value,
+                contact: document.getElementById('shop-contact').value,
+                email: document.getElementById('shop-email').value
+            };
+
+            try {
+                if (editingShopId) {
+                    await shopService.updateShop(editingShopId, shopData);
+                    showNotification('Shop updated successfully', 'success');
+                } else {
+                    await shopService.createShop(shopData);
+                    showNotification('Shop created successfully', 'success');
+                }
+                closeShopModal();
+                loadShops();
+            } catch (error) {
+                showNotification('Failed to save shop', 'error');
+                console.error('Error saving shop:', error);
+            }
+        });
+
+        async function editShop(shopId) {
+            openShopModal(shopId);
+        }
+
+        async function deleteShop(shopId) {
+            if (!confirm('Are you sure you want to delete this shop?')) return;
+            
+            try {
+                await shopService.deleteShop(shopId);
+                showNotification('Shop deleted successfully', 'success');
+                loadShops();
+            } catch (error) {
+                showNotification('Failed to delete shop', 'error');
+                console.error('Error deleting shop:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

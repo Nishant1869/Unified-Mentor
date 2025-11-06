@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mall - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Super Mall - Admin Panel</h1>
+                <div class="flex gap-4">
+                    <a href="../index.html" class="hover:text-blue-200">Home</a>
+                    <button onclick="handleLogout()" class="hover:text-blue-200">Logout</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6">Admin Dashboard</h1>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Total Shops</h3>
+                <p id="total-shops" class="text-3xl font-bold text-blue-600">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Total Offers</h3>
+                <p id="total-offers" class="text-3xl font-bold text-green-600">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Categories</h3>
+                <p id="total-categories" class="text-3xl font-bold text-purple-600">0</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-gray-500 text-sm font-medium mb-2">Floors</h3>
+                <p id="total-floors" class="text-3xl font-bold text-orange-600">0</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <a href="manage-shops.html" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-center">
+                <div class="text-4xl mb-2">🏪</div>
+                <h3 class="text-lg font-semibold">Manage Shops</h3>
+            </a>
+            <a href="manage-offers.html" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-center">
+                <div class="text-4xl mb-2">🎁</div>
+                <h3 class="text-lg font-semibold">Manage Offers</h3>
+            </a>
+            <a href="manage-category.html" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-center">
+                <div class="text-4xl mb-2">📁</div>
+                <h3 class="text-lg font-semibold">Categories & Floors</h3>
+            </a>
+            <a href="logs.html" class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow text-center">
+                <div class="text-4xl mb-2">📋</div>
+                <h3 class="text-lg font-semibold">View Logs</h3>
+            </a>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h2 class="text-2xl font-bold mb-4">Recent Logs</h2>
+            <div id="recent-logs" class="space-y-2">
+                <!-- Logs will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../js/config.js"></script>
+    <script src="../js/logger.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/shops.js"></script>
+    <script src="../js/offers.js"></script>
+    <script src="../js/categories.js"></script>
+    <script src="../js/utils.js"></script>
+    <script>
+        // Initialize auth and check admin access
+        authService.init().then(() => {
+            if (!authService.requireAdmin()) return;
+            loadStats();
+            loadRecentLogs();
+        });
+
+        async function handleLogout() {
+            await authService.signOut();
+            window.location.href = '../index.html';
+        }
+
+        async function loadStats() {
+            try {
+                const shops = await shopService.getShops();
+                const offers = await offerService.getOffers();
+                const categories = await categoryService.getCategories();
+                const floors = await categoryService.getFloors();
+
+                document.getElementById('total-shops').textContent = shops.length;
+                document.getElementById('total-offers').textContent = offers.length;
+                document.getElementById('total-categories').textContent = categories.length;
+                document.getElementById('total-floors').textContent = floors.length;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadRecentLogs() {
+            try {
+                const logsSnapshot = await firebase.firestore()
+                    .collection('logs')
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+
+                const logsContainer = document.getElementById('recent-logs');
+                
+                if (logsSnapshot.empty) {
+                    logsContainer.innerHTML = '<p class="text-gray-500">No logs available.</p>';
+                    return;
+                }
+
+                logsContainer.innerHTML = logsSnapshot.docs.map(doc => {
+                    const log = doc.data();
+                    return `
+                        <div class="border-b border-gray-200 pb-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <span class="font-semibold">${log.action}</span>
+                                    <span class="text-gray-500 text-sm ml-2">[${log.module}]</span>
+                                </div>
+                                <span class="text-gray-400 text-xs">${log.timestamp ? formatDate(log.timestamp) : 'N/A'}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 mt-1">User: ${log.userId}</p>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading logs:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+

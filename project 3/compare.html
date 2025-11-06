@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mall - Compare Products</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Super Mall</h1>
+                <div class="flex gap-4">
+                    <a href="index.html" class="hover:text-blue-200">Home</a>
+                    <a href="compare.html" class="hover:text-blue-200">Compare</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Compare Section -->
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-6">Compare Products</h1>
+        
+        <!-- Filter by Offer -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Offer</label>
+            <select id="offer-filter" class="w-full md:w-1/3 border border-gray-300 rounded-md px-3 py-2">
+                <option value="">All Offers</option>
+            </select>
+        </div>
+
+        <!-- Comparison Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+                <table id="compare-table" class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shop</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Features</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Until</th>
+                        </tr>
+                    </thead>
+                    <tbody id="compare-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Comparison data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="no-data" class="hidden text-center py-8 text-gray-500">
+            No products to compare. Please select an offer to view comparisons.
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/shops.js"></script>
+    <script src="js/offers.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        let allOffers = [];
+        let allShops = [];
+
+        // Initialize auth
+        authService.init().then(() => {
+            loadOffers();
+            loadShops();
+        });
+
+        async function loadOffers() {
+            try {
+                allOffers = await offerService.getOffers();
+                const select = document.getElementById('offer-filter');
+                
+                allOffers.forEach(offer => {
+                    const option = document.createElement('option');
+                    option.value = offer.id;
+                    option.textContent = offer.title || 'Untitled Offer';
+                    select.appendChild(option);
+                });
+
+                select.addEventListener('change', loadComparison);
+            } catch (error) {
+                console.error('Error loading offers:', error);
+            }
+        }
+
+        async function loadShops() {
+            try {
+                allShops = await shopService.getShops();
+            } catch (error) {
+                console.error('Error loading shops:', error);
+            }
+        }
+
+        async function loadComparison() {
+            const offerId = document.getElementById('offer-filter').value;
+            const tbody = document.getElementById('compare-tbody');
+            const table = document.getElementById('compare-table');
+            const noData = document.getElementById('no-data');
+
+            if (!offerId) {
+                // Show all offers for comparison
+                const offersToCompare = allOffers.filter(o => o.productName && o.price);
+                
+                if (offersToCompare.length === 0) {
+                    table.classList.add('hidden');
+                    noData.classList.remove('hidden');
+                    noData.textContent = 'No products with price information available for comparison.';
+                    return;
+                }
+
+                table.classList.remove('hidden');
+                noData.classList.add('hidden');
+
+                tbody.innerHTML = offersToCompare.map(offer => {
+                    const shop = allShops.find(s => s.id === offer.shopId);
+                    return `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${offer.productName || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shop ? shop.name : 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$${offer.price || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">${offer.discount || 0}%</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${offer.features || 'N/A'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${offer.validUntil ? formatDate(offer.validUntil) : 'N/A'}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                // Sort by price
+                await logger.info('Products compared', 'ComparePage', { count: offersToCompare.length });
+                return;
+            }
+
+            // Filter by selected offer
+            const selectedOffer = allOffers.find(o => o.id === offerId);
+            if (!selectedOffer) {
+                table.classList.add('hidden');
+                noData.classList.remove('hidden');
+                return;
+            }
+
+            // Find similar products (same product name or category)
+            const similarOffers = allOffers.filter(o => 
+                o.id !== offerId && 
+                o.productName && 
+                o.price &&
+                (o.productName.toLowerCase() === selectedOffer.productName?.toLowerCase() || 
+                 o.category === selectedOffer.category)
+            );
+
+            if (similarOffers.length === 0) {
+                table.classList.add('hidden');
+                noData.classList.remove('hidden');
+                noData.textContent = 'No similar products found for comparison.';
+                return;
+            }
+
+            // Include selected offer in comparison
+            const offersToCompare = [selectedOffer, ...similarOffers];
+
+            table.classList.remove('hidden');
+            noData.classList.add('hidden');
+
+            tbody.innerHTML = offersToCompare.map(offer => {
+                const shop = allShops.find(s => s.id === offer.shopId);
+                const isSelected = offer.id === offerId;
+                return `
+                    <tr class="${isSelected ? 'bg-blue-50' : ''}">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            ${offer.productName || 'N/A'}
+                            ${isSelected ? '<span class="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">Selected</span>' : ''}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${shop ? shop.name : 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">$${offer.price || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">${offer.discount || 0}%</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${offer.features || 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${offer.validUntil ? formatDate(offer.validUntil) : 'N/A'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            await logger.info('Products compared', 'ComparePage', { offerId, count: offersToCompare.length });
+        }
+    </script>
+</body>
+</html>
+

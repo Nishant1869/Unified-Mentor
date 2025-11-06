@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Mall - Home</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold">Super Mall</h1>
+                <div class="flex gap-4">
+                    <a href="index.html" class="hover:text-blue-200">Home</a>
+                    <a href="compare.html" class="hover:text-blue-200">Compare</a>
+                    <span id="auth-links">
+                        <a href="login.html" class="hover:text-blue-200">Login</a>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Filters -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Filter Shops</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                    <select id="category-filter" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Floor</label>
+                    <select id="floor-filter" class="w-full border border-gray-300 rounded-md px-3 py-2">
+                        <option value="">All Floors</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button id="clear-filters" class="w-full bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shops Grid -->
+        <div id="shops-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Shops will be loaded here -->
+        </div>
+
+        <!-- Offers Section -->
+        <div class="mt-8">
+            <h2 class="text-2xl font-bold mb-4">Current Offers</h2>
+            <div id="offers-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Offers will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/logger.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/shops.js"></script>
+    <script src="js/offers.js"></script>
+    <script src="js/categories.js"></script>
+    <script src="js/utils.js"></script>
+    <script>
+        // Initialize auth
+        authService.init().then(() => {
+            updateAuthLinks();
+            loadFilters();
+            loadShops();
+            loadOffers();
+        });
+
+        function updateAuthLinks() {
+            const authLinks = document.getElementById('auth-links');
+            const user = authService.getCurrentUser();
+            if (user) {
+                if (authService.isAdmin()) {
+                    authLinks.innerHTML = `
+                        <a href="admin/dashboard.html" class="hover:text-blue-200">Admin</a>
+                        <button onclick="handleLogout()" class="hover:text-blue-200">Logout</button>
+                    `;
+                } else {
+                    authLinks.innerHTML = `
+                        <button onclick="handleLogout()" class="hover:text-blue-200">Logout</button>
+                    `;
+                }
+            }
+        }
+
+        async function handleLogout() {
+            await authService.signOut();
+            window.location.href = 'index.html';
+        }
+
+        async function loadFilters() {
+            try {
+                const categories = await categoryService.getCategories();
+                const floors = await categoryService.getFloors();
+                
+                const categorySelect = document.getElementById('category-filter');
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat.name;
+                    option.textContent = cat.name;
+                    categorySelect.appendChild(option);
+                });
+
+                const floorSelect = document.getElementById('floor-filter');
+                floors.forEach(floor => {
+                    const option = document.createElement('option');
+                    option.value = floor.number;
+                    option.textContent = `Floor ${floor.number} - ${floor.name || ''}`;
+                    floorSelect.appendChild(option);
+                });
+
+                // Add event listeners
+                categorySelect.addEventListener('change', loadShops);
+                floorSelect.addEventListener('change', loadShops);
+                document.getElementById('clear-filters').addEventListener('click', () => {
+                    categorySelect.value = '';
+                    floorSelect.value = '';
+                    loadShops();
+                });
+            } catch (error) {
+                console.error('Error loading filters:', error);
+            }
+        }
+
+        async function loadShops() {
+            try {
+                const category = document.getElementById('category-filter').value;
+                const floor = document.getElementById('floor-filter').value;
+                
+                const filters = {};
+                if (category) filters.category = category;
+                if (floor) filters.floor = floor;
+
+                const shops = await shopService.getShops(filters);
+                const container = document.getElementById('shops-container');
+                
+                if (shops.length === 0) {
+                    container.innerHTML = '<p class="col-span-full text-center text-gray-500">No shops found.</p>';
+                    return;
+                }
+
+                container.innerHTML = shops.map(shop => `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">${shop.name || 'Unnamed Shop'}</h3>
+                            <p class="text-gray-600 mb-2">${shop.description || 'No description'}</p>
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${shop.category || 'N/A'}</span>
+                                <span class="text-gray-500">Floor ${shop.floor || 'N/A'}</span>
+                            </div>
+                            <a href="shop-details.html?id=${shop.id}" class="block w-full bg-blue-600 text-white text-center px-4 py-2 rounded-md hover:bg-blue-700">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading shops:', error);
+                showNotification('Failed to load shops', 'error');
+            }
+        }
+
+        async function loadOffers() {
+            try {
+                const offers = await offerService.getOffers();
+                const container = document.getElementById('offers-container');
+                
+                if (offers.length === 0) {
+                    container.innerHTML = '<p class="col-span-full text-center text-gray-500">No offers available.</p>';
+                    return;
+                }
+
+                container.innerHTML = offers.slice(0, 6).map(offer => `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2">${offer.title || 'Special Offer'}</h3>
+                            <p class="text-gray-600 mb-2">${offer.description || 'No description'}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-green-600 font-bold">${offer.discount || 0}% OFF</span>
+                                <span class="text-gray-500 text-sm">Valid until ${offer.validUntil ? formatDate(offer.validUntil) : 'N/A'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading offers:', error);
+            }
+        }
+    </script>
+</body>
+</html>
+
